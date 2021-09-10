@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/j0shgrant/inventoryd/inventoryd/internal"
 	"go.uber.org/zap"
 	"os"
 )
@@ -18,14 +17,21 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	defer logger.Sync()
 
+	// load environment variables
+	ablyKey := os.Getenv("INVENTORYD_ABLY_KEY")
+	if ablyKey == "" {
+		_, _ = fmt.Fprintln(os.Stderr, "Environment Variable [INVENTORYD_ABLY_KEY] must be set to use inventoryctl.")
+		os.Exit(1)
+	}
+
 	// initialise PresenceService
-	ps, err := internal.NewPresenceService("4JW6ZA.9TGsRA:0677DoZU_HmkH9_1", "inventoryd", uuid.NewString())
+	ps, err := NewPresenceService(ablyKey, "inventoryd", uuid.NewString(), "eu-west-1")
 	if err != nil {
 		zap.S().Fatal(err)
 	}
 
 	// initialise DockerService
-	cs, err := internal.NewDockerService(ps)
+	cs, err := NewDockerService(ps)
 	if err != nil {
 		zap.S().Fatal(err)
 	}
