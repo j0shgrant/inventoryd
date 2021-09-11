@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/ably/ably-go/ably"
 	"github.com/j0shgrant/inventoryd/common"
 	"go.uber.org/zap"
@@ -33,18 +32,6 @@ func NewPresenceService(key, channel, clientId, region string) (*PresenceService
 	}
 
 	return svc, nil
-}
-
-func (ps *PresenceService) Register(runningImages map[string]string) error {
-	msg, err := json.Marshal(runningImages)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelFunc()
-
-	return ps.client.Channels.Get(ps.channel).Presence.Enter(ctx, msg)
 }
 
 func (ps *PresenceService) Update(runningImages map[string]string) error {
