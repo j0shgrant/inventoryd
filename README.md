@@ -8,7 +8,7 @@ To install `inventoryd`, simply run the Makefile like below:
 ```shell
 $ make
 ```
-`inventoryd` requires an [API key](https://knowledge.ably.com/setting-up-and-managing-api-keys) from [Ably](https://ably.com/) in order to expose an host's Docker inventory. In order to allow `inventoryd` to authenticate with the Ably Presence API, you most export your API key as an environment variable:
+`inventoryd` requires an [API key](https://knowledge.ably.com/setting-up-and-managing-api-keys) from [Ably](https://ably.com/) in order to expose an host's Docker inventory. In order to allow `inventoryd` to authenticate with the Ably Presence API, you must export your API key as an environment variable:
 ```shell
 $ export INVENTORYD_ABLY_KEY=<YOUR_ABLY_API_KEY>
 ```
