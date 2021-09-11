@@ -10,8 +10,8 @@ import (
 )
 
 type PresenceService struct {
-	channel          *ably.RealtimeChannel
-	clientId, region string
+	client                    *ably.Realtime
+	channel, clientId, region string
 }
 
 func NewPresenceService(key, channel, clientId, region string) (*PresenceService, error) {
@@ -26,7 +26,8 @@ func NewPresenceService(key, channel, clientId, region string) (*PresenceService
 
 	zap.S().Infof("Connecting to Channel %s with ClientId %s", channel, clientId)
 	svc := &PresenceService{
-		channel:  client.Channels.Get(channel),
+		client:   client,
+		channel:  channel,
 		clientId: clientId,
 		region:   region,
 	}
@@ -43,7 +44,7 @@ func (ps *PresenceService) Register(runningImages map[string]string) error {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFunc()
 
-	return ps.channel.Presence.Enter(ctx, msg)
+	return ps.client.Channels.Get(ps.channel).Presence.Enter(ctx, msg)
 }
 
 func (ps *PresenceService) Update(runningImages map[string]string) error {
@@ -55,12 +56,12 @@ func (ps *PresenceService) Update(runningImages map[string]string) error {
 		return err
 	}
 
-	return ps.channel.Presence.Update(ctx, msg)
+	return ps.client.Channels.Get(ps.channel).Presence.Update(ctx, msg)
 }
 
 func (ps *PresenceService) Deregister() error {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFunc()
 
-	return ps.channel.Presence.Leave(ctx, nil)
+	return ps.client.Channels.Get(ps.channel).Presence.Leave(ctx, nil)
 }

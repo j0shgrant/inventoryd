@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ably/ably-go/ably"
-	"github.com/j0shgrant/inventoryd/common"
+	"log"
 	"os"
+	"strings"
 	"time"
 )
+
+type Channel struct {
+	ID string `json:"channelId"`
+}
 
 func main() {
 	// load environment variables
@@ -17,36 +23,88 @@ func main() {
 		os.Exit(1)
 	}
 
-	// initialise ably client
-	client, err := ably.NewRealtime(ably.WithKey(ablyKey))
+	// initialise rest client
+	rest, err := ably.NewREST(ably.WithKey(ablyKey), ably.WithUseBinaryProtocol(false))
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	// build context+timeout
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelFunc()
 
-	// list inventory
-	presenceMsgs, err := client.Channels.Get("inventoryd").Presence.Get(ctx)
+	// list channels
+	var allChannels []Channel
+	pages, err := rest.Request("get", "/channels").Pages(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	var errors []error
-	for _, msg := range presenceMsgs {
-		inventoryRecord, err := common.DecodeInventoryRecord(msg.Data)
+	for {
+		if !pages.Next(ctx) {
+			break
+		}
+
+		var channels []Channel
+		err = pages.Items(&channels)
 		if err != nil {
-			errors = append(errors, err)
+			log.Fatal(err)
+		}
+
+		allChannels = append(allChannels, channels...)
+	}
+
+	// filter out invalid channels
+	var channelReferences []ChannelReference
+	var invalidChannelNames []string
+	for _, channel := range allChannels {
+		channelNameTokens := strings.Split(channel.ID, ":")
+
+		// channel name is invalid if it does meet pattern [inventoryd:<ENVIRONMENT>:<REGION>]
+		if len(channelNameTokens) != 3 {
+			invalidChannelNames = append(invalidChannelNames, channel.ID)
+			continue
+		}
+		if channelNameTokens[0] != "inventoryd" {
+			invalidChannelNames = append(invalidChannelNames, channel.ID)
 			continue
 		}
 
-		fmt.Println(*inventoryRecord)
+		channelReferences = append(channelReferences, ChannelReference{
+			Environment: channelNameTokens[1],
+			Region:      channelNameTokens[2],
+		})
 	}
 
-	for _, err := range errors {
-		_, _ = fmt.Fprintln(os.Stderr, err)
+	// handle invalid channels
+	if len(invalidChannelNames) > 0 {
+		allInvalidChannels := strings.Join(invalidChannelNames, ",")
+		_, _ = fmt.Fprintf(os.Stderr, "The following invalid channel names did not meet the format [inventoryd:environment:region]: [%s]\n", allInvalidChannels)
 	}
+
+	// initialise RealtimeService
+	rs, err := NewRealtimeService(ablyKey)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// list all present instances
+	output, batchErrors := rs.BatchPresence(channelReferences, ctx)
+	if batchErrors != nil {
+		for _, err := range batchErrors {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+	}
+
+	// print output
+	outputBytes, err := json.Marshal(output)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	fmt.Println(string(outputBytes))
 }

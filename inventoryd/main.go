@@ -24,8 +24,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// derive channel name (inventoryd:environment:region)
+	region := "eu-west-1"
+	channel := fmt.Sprintf("inventoryd:production:%s", region)
+
 	// initialise PresenceService
-	ps, err := NewPresenceService(ablyKey, "inventoryd", uuid.NewString(), "eu-west-1")
+	ps, err := NewPresenceService(ablyKey, channel, uuid.NewString(), region)
 	if err != nil {
 		zap.S().Fatal(err)
 	}
