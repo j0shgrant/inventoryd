@@ -1,3 +1,5 @@
+![Build Status](https://github.com/j0shgrant/inventoryd/actions/workflows/main.yml/badge.svg)
+
 # inventoryd
 `inventoryd` is a lightweight binary that uses [Ably's Presence API](https://ably.com/documentation/core-features/presence) to expose an inventory of running Docker containers across a pool of hosts.
 
