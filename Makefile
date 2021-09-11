@@ -1,4 +1,4 @@
-default: lint install
+default: dependencies install
 
 install: install-inventoryctl install-inventoryd
 
@@ -8,5 +8,5 @@ install-inventoryctl:
 install-inventoryd:
 	go install ./inventoryd
 
-lint:
-	golangci-lint run
+dependencies:
+	go mod download
