@@ -1,9 +1,12 @@
-default: build
+default: lint install
 
-build: build-inventoryctl build-inventoryd
+install: install-inventoryctl install-inventoryd
 
-build-inventoryctl:
-	go build -o "${GOPATH}/bin" ./inventoryctl
+install-inventoryctl:
+	go install ./inventoryctl
 
-build-inventoryd:
-	go build -o "${GOPATH}/bin" ./inventoryd
+install-inventoryd:
+	go install ./inventoryd
+
+lint:
+	golangci-lint run
