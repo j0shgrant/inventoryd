@@ -93,7 +93,7 @@ func main() {
 
 	// list all present instances
 	output, batchErrors := rs.BatchPresence(channelReferences, ctx)
-	if batchErrors != nil {
+	if len(batchErrors) > 0 {
 		for _, err := range batchErrors {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 		}

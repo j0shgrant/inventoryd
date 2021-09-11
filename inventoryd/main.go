@@ -15,7 +15,9 @@ func main() {
 		os.Exit(1)
 	}
 	zap.ReplaceGlobals(logger)
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	// load environment variables
 	ablyKey := os.Getenv("INVENTORYD_ABLY_KEY")
