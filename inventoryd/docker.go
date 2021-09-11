@@ -38,6 +38,7 @@ func (ds *DockerService) Run(cronExpression string) error {
 
 	ds.updateIfNeeded()
 
+	zap.S().Infof("Polling Docker for workload updates using schedule [%s]", cronExpression)
 	_, err := s.Cron(cronExpression).Do(ds.updateIfNeeded)
 	if err != nil {
 		return err
@@ -58,6 +59,8 @@ func (ds *DockerService) updateIfNeeded() {
 
 	// update presence message
 	if updateNeeded {
+		zap.S().Info("Change in running Docker workload detected - updating presence")
+
 		// build map of image repos/tags
 		updatedImages := make(map[string]string)
 		for _, image := range ds.runningImages {

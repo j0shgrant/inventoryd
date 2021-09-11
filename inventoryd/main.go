@@ -47,10 +47,19 @@ func main() {
 	channel := fmt.Sprintf("inventoryd:%s:%s", environment, region)
 
 	// initialise PresenceService
-	ps, err := NewPresenceService(ablyKey, channel, uuid.NewString(), region)
+	clientId := uuid.NewString()
+	zap.S().Infof("Registering clientId %s with channel %s", clientId, channel)
+	ps, err := NewPresenceService(ablyKey, channel, clientId, region)
 	if err != nil {
 		zap.S().Fatal(err)
 	}
+	defer func() {
+		zap.S().Infof("Deregistering clientId %s from channel %s", clientId, channel)
+		err = ps.Deregister()
+		if err != nil {
+			zap.S().Error(err)
+		}
+	}()
 
 	// initialise DockerService
 	cs, err := NewDockerService(ps)
